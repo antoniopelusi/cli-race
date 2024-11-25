@@ -19,3 +19,7 @@ Minimal and lightweight race game that runs on command line interface.
 - `run`: run cli-race
 
 - `run_min`: run min-cli-race
+
+## Screenshot
+
+![](screenshot.png)
