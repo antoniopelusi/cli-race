@@ -2,7 +2,13 @@
 
 Minimal and lightweight race game that runs on command line interface.
 
-# Versions
+## Commands
+
+- `a`: left
+- `d`: right
+- `esc`: quit the game
+
+## Versions
 
 - `cli-race`:
 	- source code size: 5060 bytes
