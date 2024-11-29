@@ -25,7 +25,7 @@
 #define ENTER_ALTERNATE_BUFFER "\033[?1049h"
 #define EXIT_ALTERNATE_BUFFER "\033[?1049l"
 
-#define C_SCORE_TEXT C_BOLD C_BLACK
+#define C_SCORE_TEXT C_BOLD C_BLACK C_GREEN
 
 int d = D, rw = RW, s = 0;
 
@@ -90,13 +90,22 @@ void exit_alternate_buffer(){
     fflush(stdout);
 }
 
-void print_crash_text() {
-    const char *text = "GAME OVER!";
+void print_score(int s){
+	printf("%s", C_SCORE_TEXT);
+	printf(CURSOR_POS(1, 1) "Score: %d\n", s);
+	printf("%s", C_RESET);
+	fflush(stdout);
+}
+
+void print_crash_prompt() {
     int text_length = 10;
     int start_row = H / 2;
     int start_col = (W - text_length) / 2;
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "GAME OVER!" C_RESET, start_row, start_col);
 
-    printf(CURSOR_POS(%d, %d) C_WHITE C_RED "GAME OVER!" C_RESET, start_row, start_col);
+    int prompt_length = 17;
+    int prompt_start_col = (W - prompt_length) / 2;
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "Play again? [Y/n]" C_RESET, start_row + 1, prompt_start_col);
     fflush(stdout);
 }
 
@@ -194,73 +203,105 @@ int main() {
     char map[H][W];
     srand(time(NULL));
 
-    enter_alternate_buffer();
-
-    set_mode(0);
-    hide_cursor();
-
-    int prev_center = W / 2;
-    clear_map(map, prev_center);
-
-    system(CLEAR_SCREEN);
-    int car_pos = W / 2;
+    int highest_score = 0;
 
     while (1) {
-        if (kbhit()) {
-            char input = get_input();
-            if (input == 27) {
-                system(CLEAR_SCREEN);
-                break;
+        enter_alternate_buffer();
+
+        set_mode(0);
+        hide_cursor();
+
+        int prev_center = W / 2;
+        clear_map(map, prev_center);
+
+        system(CLEAR_SCREEN);
+        int car_pos = W / 2;
+        s = 0;
+        rw = RW;
+        d = D;
+
+        int game_over = 0;
+
+        while (!game_over) {
+            if (kbhit()) {
+                char input = get_input();
+                if (input == 27) {
+                    if (s > highest_score) {
+                        highest_score = s;
+                    }
+                    system(CLEAR_SCREEN);
+                    exit_alternate_buffer();
+                    set_mode(1);
+                    show_cursor();
+                    printf(C_BOLD "Highest Score: %d\n" C_RESET, highest_score);
+                    return 0;
+                }
+                move_car(&car_pos, input);
+            } else {
+                bot(&car_pos, map);
             }
-            move_car(&car_pos, input);
-        }
-        else
-        {
-            bot(&car_pos, map);
-        }
 
-        char new_row[W];
-        int new_center;
-        generate_row(new_row, prev_center, &new_center);
-        prev_center = new_center;
+            char new_row[W];
+            int new_center;
+            generate_row(new_row, prev_center, &new_center);
+            prev_center = new_center;
 
-        for (int i = H - 1; i > 0; i--) {
+            for (int i = H - 1; i > 0; i--) {
+                for (int j = 0; j < W; j++) {
+                    map[i][j] = map[i - 1][j];
+                }
+            }
+
             for (int j = 0; j < W; j++) {
-                map[i][j] = map[i - 1][j];
+                map[0][j] = new_row[j];
             }
+
+            for (int i = 0; i < H; i++) {
+                print_row(map[i], i);
+            }
+
+            s++;
+
+            print_score(s);
+            printf(CURSOR_POS(20, %d) C_RED "**" C_RESET, car_pos);
+
+            if (check_collision(car_pos, map)) {
+                print_crash_prompt();
+                while (1) {
+                    if (kbhit()) {
+                        char input = get_input();
+                        if (input == 'Y' || input == 'y') {
+                            if (s > highest_score) {
+                                highest_score = s;
+                            }
+                            game_over = 1;
+                            break;
+                        } else if (input == 'N' || input == 'n' || input == 27) {
+                            if (s > highest_score) {
+                                highest_score = s;
+                            }
+                            system(CLEAR_SCREEN);
+                            exit_alternate_buffer();
+                            printf(C_BOLD "Highest Score: %d\n" C_RESET, highest_score);
+                            set_mode(1);
+                            show_cursor();
+                            return 0;
+                        }
+                    }
+                }
+            }
+
+            fflush(stdout);
+            usleep(d);
+
+            if (s % 100 == 0 && rw > 8) {
+                rw--;
+            }
+            d -= 10;
         }
 
-        for (int j = 0; j < W; j++) {
-            map[0][j] = new_row[j];
-        }
-
-        for (int i = 0; i < H; i++) {
-            print_row(map[i], i);
-        }
-
-        s++;
-
-        printf(CURSOR_POS(1, 1) "Score: %d\n", s);
-        printf(CURSOR_POS(20, %d) C_RED "**" C_RESET, car_pos);
-
-        if (check_collision(car_pos, map)) {
-            printf("\nCRASH!\n");
-            break;
-        }
-
-        fflush(stdout);
-        usleep(d);
-
-        if (s % 100 == 0 && rw > 8) {
-            rw--;
-        }
-        d -= 10;
+        system(CLEAR_SCREEN);
     }
-
-    exit_alternate_buffer();
-    printf("%sScore: %d%s\n", C_BOLD, s, C_RESET);
-    set_mode(1);
-    show_cursor();
 
     return 0;
 }
