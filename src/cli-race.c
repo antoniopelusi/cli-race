@@ -121,6 +121,25 @@ void print_pause_screen() {
     fflush(stdout);
 }
 
+void print_testing_message(int bot_active, char map[H][W]) {
+    if (bot_active) {
+        printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "TESTING" C_RESET, H, W - 7);
+    } else {
+        for (int i = 0; i < 7; i++) {
+            int col = W - 7 + i;
+            printf(CURSOR_POS(%d, %d), H, col);
+            if (map[H-1][col] == 'G') {
+                printf(C_GREEN " " C_RESET);
+            } else if (map[H-1][col] == 'E') {
+                printf(C_WHITE " " C_RESET);
+            } else if (map[H-1][col] == 'D') {
+                printf(C_DARK " " C_RESET);
+            }
+        }
+    }
+    fflush(stdout);
+}
+
 void generate_row(char row[], int prev_center, int *new_center) {
     static int curvature = 0;
     curvature += (rand() % 3) - 1;
@@ -216,6 +235,7 @@ int main() {
     srand(time(NULL));
 
     int highest_score = 0;
+    int bot_active = 0;
 
     enter_alternate_buffer();
 
@@ -252,9 +272,14 @@ int main() {
                             }
                         }
                     }
+                } else if (input == 't' || input == 'T') {
+                    bot_active = !bot_active;
+                } else {
+                    move_car(&car_pos, input);
                 }
-                move_car(&car_pos, input);
-            } else {
+            }
+
+            if (bot_active) {
                 bot(&car_pos, map);
             }
 
@@ -281,6 +306,8 @@ int main() {
 
             print_score(s);
             printf(CURSOR_POS(20, %d) C_RED "**" C_RESET, car_pos);
+
+            print_testing_message(bot_active, map);
 
             if (check_collision(car_pos, map)) {
                 print_crash_prompt();
