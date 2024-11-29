@@ -22,6 +22,8 @@
 #define C_SHOW_CURSOR ESC "[?25h"
 #define CURSOR_POS(row, col) ESC "[" #row ";" #col "H"
 #define CLEAR_SCREEN "clear"
+#define ENTER_ALTERNATE_BUFFER "\033[?1049h"
+#define EXIT_ALTERNATE_BUFFER "\033[?1049l"
 
 #define C_SCORE_TEXT C_BOLD C_BLACK
 
@@ -75,6 +77,26 @@ void hide_cursor() {
 
 void show_cursor() {
     printf(C_SHOW_CURSOR);
+    fflush(stdout);
+}
+
+void enter_alternate_buffer(){
+	printf(ENTER_ALTERNATE_BUFFER);
+    fflush(stdout);
+}
+
+void exit_alternate_buffer(){
+	printf(EXIT_ALTERNATE_BUFFER);
+    fflush(stdout);
+}
+
+void print_crash_text() {
+    const char *text = "GAME OVER!";
+    int text_length = 10;
+    int start_row = H / 2;
+    int start_col = (W - text_length) / 2;
+
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED "GAME OVER!" C_RESET, start_row, start_col);
     fflush(stdout);
 }
 
@@ -158,9 +180,21 @@ void clear_map(char map[H][W], int prev_center) {
     }
 }
 
+void bot(int *car_pos, char map[H][W]) {
+    if (map[18][*car_pos - 1] == 'G' || map[18][*car_pos] == 'G') {
+        if (map[18][*car_pos - 2] != 'G') {
+        	move_car(car_pos, 'a');
+        } else if (map[18][*car_pos + 1] != 'G') {
+       		move_car(car_pos, 'd');
+        }
+    }
+}
+
 int main() {
     char map[H][W];
     srand(time(NULL));
+
+    enter_alternate_buffer();
 
     set_mode(0);
     hide_cursor();
@@ -179,6 +213,10 @@ int main() {
                 break;
             }
             move_car(&car_pos, input);
+        }
+        else
+        {
+            bot(&car_pos, map);
         }
 
         char new_row[W];
@@ -219,6 +257,8 @@ int main() {
         d -= 10;
     }
 
+    exit_alternate_buffer();
+    printf("%sScore: %d%s\n", C_BOLD, s, C_RESET);
     set_mode(1);
     show_cursor();
 
