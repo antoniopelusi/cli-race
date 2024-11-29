@@ -109,6 +109,18 @@ void print_crash_prompt() {
     fflush(stdout);
 }
 
+void print_pause_screen() {
+    int text_length = 5;
+    int start_row = H / 2;
+    int start_col = (W - text_length) / 2;
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "PAUSE" C_RESET, start_row, start_col);
+
+    int prompt_length = 24;
+    int prompt_start_col = (W - prompt_length) / 2;
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "Press 'r' to resume, 'q' to quit" C_RESET, start_row + 1, prompt_start_col);
+    fflush(stdout);
+}
+
 void generate_row(char row[], int prev_center, int *new_center) {
     static int curvature = 0;
     curvature += (rand() % 3) - 1;
@@ -205,12 +217,11 @@ int main() {
 
     int highest_score = 0;
 
+    enter_alternate_buffer();
+
+    set_mode(0);
+    hide_cursor();
     while (1) {
-        enter_alternate_buffer();
-
-        set_mode(0);
-        hide_cursor();
-
         int prev_center = W / 2;
         clear_map(map, prev_center);
 
@@ -220,21 +231,27 @@ int main() {
         rw = RW;
         d = D;
 
-        int game_over = 0;
-
-        while (!game_over) {
+        while (1) {
             if (kbhit()) {
                 char input = get_input();
                 if (input == 27) {
-                    if (s > highest_score) {
-                        highest_score = s;
+                    print_pause_screen();
+                    while (1) {
+                        if (kbhit()) {
+                            char pause_input = get_input();
+                            if (pause_input == 'r' || pause_input == 'R') {
+                                system(CLEAR_SCREEN);
+                                break;
+                            } else if (pause_input == 'q' || pause_input == 'Q') {
+                                system(CLEAR_SCREEN);
+                                exit_alternate_buffer();
+                                set_mode(1);
+                                show_cursor();
+                                printf(C_BOLD "Highest Score: %d\n" C_RESET, highest_score);
+                                return 0;
+                            }
+                        }
                     }
-                    system(CLEAR_SCREEN);
-                    exit_alternate_buffer();
-                    set_mode(1);
-                    show_cursor();
-                    printf(C_BOLD "Highest Score: %d\n" C_RESET, highest_score);
-                    return 0;
                 }
                 move_car(&car_pos, input);
             } else {
@@ -274,7 +291,6 @@ int main() {
                             if (s > highest_score) {
                                 highest_score = s;
                             }
-                            game_over = 1;
                             break;
                         } else if (input == 'N' || input == 'n' || input == 27) {
                             if (s > highest_score) {
@@ -289,6 +305,7 @@ int main() {
                         }
                     }
                 }
+                break;
             }
 
             fflush(stdout);
