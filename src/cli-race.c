@@ -109,7 +109,7 @@ void print_current_score(int s, char map[H][W]) {
     fflush(stdout);
 }
 
-void print_crash_prompt() {
+void print_crash_prompt(int selected_option) {
     int text_length = 10;
     int start_row = H / 2;
     int start_col = (W - text_length) / 2;
@@ -117,19 +117,69 @@ void print_crash_prompt() {
 
     int prompt_length = 17;
     int prompt_start_col = (W - prompt_length) / 2;
-    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "Play again? [Y/n]" C_RESET, start_row + 1, prompt_start_col);
+    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "Play again? [" C_RESET, start_row + 1, prompt_start_col);
+
+    if (selected_option == 0) {
+        printf(C_RED C_WHITE C_BOLD ESC "[31mY" C_RESET C_WHITE C_RED "/n]" C_RESET);
+    } else {
+        printf(C_WHITE C_RED "Y/" C_WHITE C_BOLD ESC "[31mn" C_RESET C_WHITE C_RED "]" C_RESET);
+    }
+
     fflush(stdout);
 }
 
-void print_pause_screen() {
-    int text_length = 5;
+void print_pause_screen(int selected_option, int car_pos, char map[H][W]) {
+    int text_length = 4;
     int start_row = H / 2;
     int start_col = (W - text_length) / 2;
-    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "PAUSE" C_RESET, start_row, start_col);
 
-    int prompt_length = 32;
-    int prompt_start_col = (W - prompt_length) / 2;
-    printf(CURSOR_POS(%d, %d) C_WHITE C_RED C_BOLD "Press 'r' to resume, 'q' to quit" C_RESET, start_row + 1, prompt_start_col);
+    int road_start_row = start_row - 1;
+    int road_start_col = (W - 11) / 2;
+
+    for (int i = 0; i < 6; i++) {
+        printf(CURSOR_POS(%d, %d) C_WHITE " " C_RESET, road_start_row + i, road_start_col);
+        printf(CURSOR_POS(%d, %d) C_DARK "         " C_RESET, road_start_row + i, road_start_col + 1);
+        printf(CURSOR_POS(%d, %d) C_WHITE " " C_RESET, road_start_row + i, road_start_col + 10);
+    }
+
+    printf(CURSOR_POS(%d, %d) C_DARK C_BOLD "PAUSE" C_RESET, start_row, start_col - 1);
+
+    int option1_length = 7;
+    int option1_start_col = (W - option1_length) / 2;
+    printf(CURSOR_POS(%d, %d), start_row + 2, option1_start_col - 1);
+    if (selected_option == 0) {
+        printf(C_BOLD ">" C_RESET " Resume");
+    } else {
+        printf("  Resume");
+    }
+
+    int option2_length = 7;
+    int option2_start_col = (W - option2_length) / 2;
+    printf(CURSOR_POS(%d, %d), start_row + 3, option2_start_col - 1);
+    if (selected_option == 1) {
+        printf(C_BOLD ">" C_RESET " Quit");
+    } else {
+        printf("  Quit");
+    }
+
+    if (selected_option == 1) {
+        printf(CURSOR_POS(20, %d), car_pos);
+        if (map[19][car_pos - 1] == 'E') {
+            printf(C_WHITE " " C_RESET);
+        } else if (map[19][car_pos - 1] == 'D') {
+            printf(C_DARK " " C_RESET);
+        }
+
+        printf(CURSOR_POS(20, %d), car_pos + 1);
+        if (map[19][car_pos] == 'E') {
+            printf(C_WHITE " " C_RESET);
+        } else if (map[19][car_pos] == 'D') {
+            printf(C_DARK " " C_RESET);
+        }
+    } else {
+        printf(CURSOR_POS(20, %d) C_RED "**" C_RESET, car_pos);
+    }
+
     fflush(stdout);
 }
 
@@ -329,8 +379,9 @@ void handle_start_menu(int *selected_option, char map[H][W]) {
     }
 }
 
-void handle_pause_menu(int *highest_score, int s) {
-    print_pause_screen();
+void handle_pause_menu(int *highest_score, int s, int car_pos, char map[H][W]) {
+    int selected_option = 0;
+    print_pause_screen(selected_option, car_pos, map);
     while (1) {
         if (kbhit()) {
             char pause_input = get_input();
@@ -340,14 +391,24 @@ void handle_pause_menu(int *highest_score, int s) {
                     seq[0] = get_input();
                     if (seq[0] == '[') {
                         seq[1] = get_input();
-                        if (seq[1] == 'A' || seq[1] == 'B' || seq[1] == 'C' || seq[1] == 'D') {
-                            continue;
+                        if (seq[1] == 'A') {
+                            selected_option = (selected_option + 1) % 2;
+                            print_pause_screen(selected_option, car_pos, map);
+                        } else if (seq[1] == 'B') {
+                            selected_option = (selected_option + 1) % 2;
+                            print_pause_screen(selected_option, car_pos, map);
                         }
                     }
                 } else {
                     system(CLEAR_SCREEN);
                     break;
                 }
+            } else if (pause_input == 'w' || pause_input == 'W') {
+                selected_option = (selected_option + 1) % 2;
+                print_pause_screen(selected_option, car_pos, map);
+            } else if (pause_input == 's' || pause_input == 'S') {
+                selected_option = (selected_option + 1) % 2;
+                print_pause_screen(selected_option, car_pos, map);
             } else if (pause_input == 'r' || pause_input == 'R') {
                 system(CLEAR_SCREEN);
                 break;
@@ -361,13 +422,29 @@ void handle_pause_menu(int *highest_score, int s) {
                 show_cursor();
                 printf(C_BOLD "Highest Score: %d\n" C_RESET, *highest_score);
                 exit(0);
+            } else if (pause_input == '\n' || pause_input == '\r') {
+                if (selected_option == 0) {
+                    system(CLEAR_SCREEN);
+                    break;
+                } else if (selected_option == 1) {
+                    if (s > *highest_score) {
+                        *highest_score = s;
+                    }
+                    system(CLEAR_SCREEN);
+                    exit_alternate_buffer();
+                    set_mode(1);
+                    show_cursor();
+                    printf(C_BOLD "Highest Score: %d\n" C_RESET, *highest_score);
+                    exit(0);
+                }
             }
         }
     }
 }
 
 int handle_game_over_menu(int *highest_score, int s) {
-    print_crash_prompt();
+    int selected_option = 0;
+    print_crash_prompt(selected_option);
     while (1) {
         if (kbhit()) {
             char input = get_input();
@@ -377,17 +454,27 @@ int handle_game_over_menu(int *highest_score, int s) {
                     seq[0] = get_input();
                     if (seq[0] == '[') {
                         seq[1] = get_input();
-                        if (seq[1] == 'A' || seq[1] == 'B' || seq[1] == 'C' || seq[1] == 'D') {
-                            continue;
+                        if (seq[1] == 'D' || seq[1] == 'A') {
+                            selected_option = 0;
+                            print_crash_prompt(selected_option);
+                        } else if (seq[1] == 'C' || seq[1] == 'B') {
+                            selected_option = 1;
+                            print_crash_prompt(selected_option);
                         }
                     }
                 }
-            } else if (input == 'Y' || input == 'y') {
+            } else if (input == 'a' || input == 'A') {
+                selected_option = 0;
+                print_crash_prompt(selected_option);
+            } else if (input == 'd' || input == 'D') {
+                selected_option = 1;
+                print_crash_prompt(selected_option);
+            } else if (input == 'y' || input == 'Y') {
                 if (s > *highest_score) {
                     *highest_score = s;
                 }
                 return 1;
-            } else if (input == 'N' || input == 'n') {
+            } else if (input == 'n' || input == 'N') {
                 if (s > *highest_score) {
                     *highest_score = s;
                 }
@@ -397,6 +484,23 @@ int handle_game_over_menu(int *highest_score, int s) {
                 set_mode(1);
                 show_cursor();
                 exit(0);
+            } else if (input == '\n' || input == '\r') {
+                if (selected_option == 0) {
+                    if (s > *highest_score) {
+                        *highest_score = s;
+                    }
+                    return 1;
+                } else if (selected_option == 1) {
+                    if (s > *highest_score) {
+                        *highest_score = s;
+                    }
+                    system(CLEAR_SCREEN);
+                    exit_alternate_buffer();
+                    printf(C_BOLD "Highest Score: %d\n" C_RESET, *highest_score);
+                    set_mode(1);
+                    show_cursor();
+                    exit(0);
+                }
             }
         }
     }
@@ -429,7 +533,7 @@ void singleplayer_game_loop(int *highest_score, char map[H][W]) {
                         }
                     }
                 } else {
-                    handle_pause_menu(highest_score, s);
+                    handle_pause_menu(highest_score, s, car_pos, map);
                 }
             } else if (input == 't' || input == 'T') {
                 bot_active = !bot_active;
