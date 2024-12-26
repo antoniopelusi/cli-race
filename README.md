@@ -1,30 +1,50 @@
-# cli-race
+# **cli-race**
 
 Minimal and lightweight race game that runs on command line interface.
 
-## Commands
+## **Commands**
 
-- `a`: left
-- `d`: right
-- `esc`: quit the game
+- First player
+	- `a`: left
+	- `d`: right
+- Second player
+	- `left arrow`: left
+	- `right arrow`: right
+- `esc`: pause menu
+- `t`: autoplay
 
-## Versions
+### **Install**
 
-- `cli-race`:
-	- source code size: 5060 bytes
-	- compiled executable size: 17264 bytes
+To install **cli-race**, follow these steps:
 
-- `min-cli-race`: 
-	- source code size: 1723 bytes
-	- compiled executable size: 14544 bytes
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/antoniopelusi/cli-race.git
+   ```
 
-## Instructions
+   or
 
-- `make`: compile
+   ```sh
+   git clone git@github.com:antoniopelusi/cli-race.git
+   ```
 
-- `run`: run cli-race
+2. **Move to the repository directory:**
+    ```sh
+    cd cli-race
+    ```
 
-- `run_min`: run min-cli-race
+3. **Run the installer script:**
+    ```sh
+    make install
+    ```
+
+### **Usage**
+
+- **Run game:**
+    ```sh
+    cli-race
+    ```
+
 
 ## Screenshot
 
