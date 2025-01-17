@@ -15,7 +15,12 @@ Minimal and lightweight race game that runs on command line interface.
 
 ### **Install**
 
-To install **cli-race**, follow these steps:
+Using the online script:
+```sh
+curl https://raw.githubusercontent.com/antoniopelusi/cli-race/refs/heads/main/install.sh | bash
+```
+
+Or following these steps:
 
 1. **Clone the repository:**
    ```sh
