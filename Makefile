@@ -3,6 +3,7 @@
 CC = gcc
 SOURCE = src/cli-race.c
 EXEC = bin/cli-race
+NAME = cli-race
 INSTALL_PATH = /usr/local/bin
 
 RESET = \033[0m
@@ -26,5 +27,5 @@ install: all
 	echo "Installed $(GREEN)$(EXEC)$(RESET) to $(BLUE)$(INSTALL_PATH)$(RESET)"
 
 uninstall:
-	sudo rm -f $(INSTALL_PATH)/$(EXEC)
+	sudo rm -f $(INSTALL_PATH)/$(NAME)
 	echo "Uninstalled $(GREEN)$(EXEC)$(RESET) from $(BLUE)$(INSTALL_PATH)$(RESET)"
